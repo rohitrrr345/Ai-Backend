@@ -63,5 +63,87 @@ npm start
 
 
 
-Method,Path,Description
-POST,/api/v1/leads/upload-score,"Accepts a multipart/form-data request with a CSV file. It processes, scores, and saves leads to MongoDB."
+## 🧠 API Endpoints
+
+---
+
+### 📩 **POST** `/offer/createOffer`
+
+**Description:**  
+Creates a new offer and returns the unique `offerId` that will be linked to subsequent lead uploads.
+
+#### **Request Example**
+
+```json
+{
+  "name": "AI Outreach Automation Suite",
+  "value_props": ["Automate lead outreach", "Boost conversion rates"],
+  "ideal_use_cases": ["B2B SaaS", "Marketing teams", "Sales automation"]
+}
+
+
+
+
+Response Example
+{
+  "message": "Offer created successfully",
+  "offerId": "6724af8b9123cd47d8a1f9e5"
+}
+
+
+
+
+
+📤 POST /leads/upload/:offerId
+
+Description:
+Uploads a CSV file containing lead data associated with a specific offer.
+The backend parses the CSV, processes each lead, and uses Gemini AI to calculate reasoning, intent, and lead scores.
+
+Request
+
+Content-Type: multipart/form-data
+
+Body: file (CSV file)
+
+Params: offerId (from /offer/createOffer response)
+
+Response Example
+[
+  {
+    "name": "Ava Patel",
+    "role": "Head of Growth",
+    "company": "FlowMetrics",
+    "aiPoints": 50,
+    "intent": "High",
+    "score": 80,
+    "reasoning": "The lead is a Head of Growth at a B2B SaaS company, an ideal target for AI outreach automation. Her LinkedIn bio explicitly states a focus on scaling through automation, directly aligning with the offer's core value."
+  },
+  {
+    "name": "Liam Johnson",
+    "role": "Marketing Director",
+    "company": "AdNova",
+    "aiPoints": 42,
+    "intent": "Medium",
+    "score": 67,
+    "reasoning": "The lead manages marketing operations at a mid-sized firm. While relevant, there's limited evidence of AI adoption in their recent activities."
+  }
+]
+
+⚙️ Processing Flow
+
+Upload CSV file → Backend parses rows into JSON objects.
+
+Each lead is analyzed using Gemini 2.5 Flash AI (@google/genai).
+
+The AI model assigns:
+
+intent → High | Medium | Low
+
+score → Numeric value (0–100)
+
+reasoning → Short AI-generated explanation
+
+Processed leads are stored in MongoDB under their corresponding offerId.
+
+The server responds with a structured JSON containing scored leads.
