@@ -34,8 +34,7 @@ This project is a **Node.js + Express** backend service designed to automate and
 ### 1. Clone the Repository
 
 ```bash
-git clone [https://github.com/your-username/lead-scoring-backend.git](https://github.com/your-username/lead-scoring-backend.git)
-cd lead-scoring-backend
+git clone https://github.com/rohitrrr345/Ai-Backend.git
 
 
 
@@ -147,3 +146,20 @@ reasoning → Short AI-generated explanation
 Processed leads are stored in MongoDB under their corresponding offerId.
 
 The server responds with a structured JSON containing scored leads.
+
+
+🐳 Docker Setup
+1. Build Docker images
+docker-compose build
+
+2. Run containers
+docker-compose up -d
+
+3. Check running containers
+docker ps
+
+
+You should see:
+
+lead-scoring-backend   0.0.0.0:5000->5000/tcp
+mongo                  27017/tcp
