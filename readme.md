@@ -163,3 +163,10 @@ You should see:
 
 lead-scoring-backend   0.0.0.0:5000->5000/tcp
 mongo                  27017/tcp
+
+
+Live Link   https://ai-backend-s2dz.onrender.com
+
+createOffer  POST  https://ai-backend-s2dz.onrender.com/offer/createOffer with json input  Data
+
+Get Results with Csv  Post  https://ai-backend-s2dz.onrender.com/leads/upload/:offerId  upload a CSV with Params offerId
