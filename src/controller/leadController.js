@@ -1,8 +1,8 @@
 import fs from "fs";
 import csv from "csv-parser";
 import Offer from "../models/offer.js";
-import { calculateRuleScore } from "../utils/scoring.js";
 import { aiReasoning } from "../services/aiReasoning.js";
+import { calculateRuleScore } from "../utils/scoring.js";
 
 export const uploadLeads = async (req, res) => {
   const { offerId } = req.params;
@@ -11,44 +11,81 @@ export const uploadLeads = async (req, res) => {
     const offer = await Offer.findById(offerId);
     if (!offer) return res.status(404).json({ message: "Offer not found" });
 
-    const leads = [];
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
     const filePath = req.file.path;
 
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (row) => {
-        leads.push(row);
-      })
-      .on("end", async () => {
-        const results = [];
+    // Parse CSV using Promise
+    const leads = await new Promise((resolve, reject) => {
+      const data = [];
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on("data", (row) => data.push(row))
+        .on("end", () => resolve(data))
+        .on("error", reject);
+    });
 
-        for (const lead of leads) {
-          const ruleScore = calculateRuleScore(lead, offer);
-          const aiResponse = await aiReasoning(offer, lead);
-          console.log("AI Respons new   e:", aiResponse);
+    let processedCount = 0;
+    let skippedCount = 0;
+    const results = [];
+    const skippedLeads = [];
 
-          const aiPoints = aiResponse.intent === "High" ? 50 :
-                           aiResponse.intent === "Medium" ? 30 : 10;
+    for (const lead of leads) {
+      // Basic validation
+      if (!lead.name || !lead.company || !lead.role) {
+        skippedCount++;
+        skippedLeads.push(lead);
+        continue;
+      }
 
-          const finalScore = ruleScore + aiPoints;
+      try {
+        const ruleScore = calculateRuleScore(lead, offer);
+        const aiResponse = await aiReasoning(offer, lead);
 
-          results.push({
-            name: lead.name,
-            role: lead.role,
-            company: lead.company,
-            aiPoints: aiPoints,
-            intent: aiResponse.intent,
-            score: finalScore,
-            reasoning: aiResponse.reasoning
-          });
-        }
+        const aiPoints =
+          aiResponse.intent === "High"
+            ? 50
+            : aiResponse.intent === "Medium"
+            ? 30
+            : 10;
 
-        fs.unlinkSync(filePath); // delete temp filec
-        return res.json(results);
-      });
+        const finalScore = ruleScore + aiPoints;
 
+        results.push({
+          name: lead.name,
+          role: lead.role,
+          company: lead.company,
+          aiPoints,
+          intent: aiResponse.intent,
+          score: finalScore,
+          reasoning: aiResponse.reasoning,
+        });
+
+        processedCount++;
+      } catch (err) {
+        console.error(`Error processing lead ${lead.name}:`, err.message);
+        skippedCount++;
+        skippedLeads.push({ ...lead, error: err.message });
+      }
+    }
+
+    // Clean up temp file
+    fs.unlinkSync(filePath);
+
+    return res.status(200).json({
+      message: "Leads processed successfully",
+      summary: {
+        totalLeads: leads.length,
+        processed: processedCount,
+        skipped: skippedCount,
+      },
+      data: results,
+      skippedLeads,
+    });
   } catch (error) {
-    console.error(error);
+    console.error("Upload failed:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -1,9 +1,12 @@
 {
   "name": "assignment",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "dev": "nodemon src/app.js"
+   "main": "src/server.js",
+  "type": "module",
+ "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "echo \"No tests yet\""
   },
   "keywords": [],
   "author": "",
